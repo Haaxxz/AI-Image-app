@@ -54,18 +54,18 @@ jobs:
 
           if [ -n "${KEYSTORE_BASE64}" ]; then
             echo "Decoding provided keystore..."
-            echo "$KEYSTORE_BASE64" | base64 --decode > keystore.jks
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/keystore.jks"
           else
             echo "Generating ephemeral keystore..."
             keytool -genkeypair -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
-              -keystore keystore.jks -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" \
+              -keystore "$GITHUB_WORKSPACE/keystore.jks" -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" \
               -dname "CN=CI, OU=CI, O=CI, L=City, ST=State, C=US"
           fi
 
       - name: Build release APK
         working-directory: ./code
         env:
-          KEYSTORE_PATH: ${{ runner.workspace }}/keystore.jks
+          KEYSTORE_PATH: ${{ github.workspace }}/keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -75,7 +75,7 @@ jobs:
           KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:-changeit}
           KEY_PASSWORD=${KEY_PASSWORD:-changeit}
 
-          ./gradlew :app:assembleRelease --no-daemon -PkeystoreFile=$PWD/../keystore.jks -PkeystorePassword="$KEYSTORE_PASSWORD" -PkeyAlias="$KEY_ALIAS" -PkeyPassword="$KEY_PASSWORD"
+          ./gradlew :app:assembleRelease --no-daemon -PkeystoreFile="$GITHUB_WORKSPACE/keystore.jks" -PkeystorePassword="$KEYSTORE_PASSWORD" -PkeyAlias="$KEY_ALIAS" -PkeyPassword="$KEY_PASSWORD"
 
       - name: Upload signed release APK
         uses: actions/upload-artifact@v4
